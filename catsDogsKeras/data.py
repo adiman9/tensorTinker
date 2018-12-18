@@ -70,6 +70,6 @@ def get_training_data():
 # x_train, y_train = create_training_data(False)
 
 # load data set from saved pickles
-x_train, y_train = get_training_data()
+# x_train, y_train = get_training_data()
 
-show_image(random.choice(x_train))
+# show_image(random.choice(x_train))
