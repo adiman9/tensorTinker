@@ -8,7 +8,6 @@ import cv2
 from dotenv import load_dotenv
 load_dotenv()
 
-# use dotenv or something here
 DATA_DIR = os.getenv('dataset_dir')
 CATEGORIES = ['Cat', 'Dog']
 IMG_SIZE = 50
