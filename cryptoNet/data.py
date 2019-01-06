@@ -3,17 +3,15 @@ import random
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
-from dotenv import load_dotenv
 from collections import deque
+
+from dotenv import load_dotenv
 load_dotenv()
 
 DATA_DIR = os.getenv("dataset_dir")
 
 SEQ_LEN = 60
 FUTURE_PERIOD_PREDICT = 3
-MARKET_TO_PREDICT = "LTC-USD"
-
-main_df = pd.DataFrame()
 
 markets = ["BTC-USD", "LTC-USD", "ETH-USD", "BCH-USD"]
 
@@ -71,40 +69,44 @@ def preprocess_df(df):
 
     return np.array(X), y
 
-for r in markets:
-    dataset = f"{DATA_DIR}/{r}.csv"
-    df = pd.read_csv(dataset, names=[
-                     "time", "open", "high", "low", "close", "volume"])
+def get_training_data(MARKET_TO_PREDICT):
+    main_df = pd.DataFrame()
 
-    df.rename(columns={
-            "close": f"{r}_close",
-            "volume": f"{r}_volume"
-        }, inplace=True)
+    for r in markets:
+        dataset = f"{DATA_DIR}/{r}.csv"
+        df = pd.read_csv(dataset, names=[
+                         "time", "open", "high", "low", "close", "volume"])
 
-    df.set_index("time", inplace=True)
-    df = df[[f"{r}_close", f"{r}_volume"]]
+        df.rename(columns={
+                "close": f"{r}_close",
+                "volume": f"{r}_volume"
+            }, inplace=True)
 
-    if len(main_df):
-        main_df = main_df.join(df)
-    else:
-        main_df = df
+        df.set_index("time", inplace=True)
+        df = df[[f"{r}_close", f"{r}_volume"]]
 
-main_df["future"] = main_df[f"{MARKET_TO_PREDICT}_close"].shift(-FUTURE_PERIOD_PREDICT)
+        if len(main_df):
+            main_df = main_df.join(df)
+        else:
+            main_df = df
 
-main_df["target"] = list(map(classify, main_df[f"{MARKET_TO_PREDICT}_close"], main_df["future"]))
+    main_df["future"] = main_df[f"{MARKET_TO_PREDICT}_close"].shift(-FUTURE_PERIOD_PREDICT)
 
-times = sorted(main_df.index.values)
+    main_df["target"] = list(map(classify, main_df[f"{MARKET_TO_PREDICT}_close"], main_df["future"]))
 
-last_5perc = times[-int(0.05*len(times))]
+    times = sorted(main_df.index.values)
 
-validation_main_df = main_df[(main_df.index >= last_5perc)]
-main_df = main_df[(main_df.index < last_5perc)]
+    last_5perc = times[-int(0.05*len(times))]
 
-train_x, train_y = preprocess_df(main_df)
-validation_x, validation_y = preprocess_df(validation_main_df)
+    validation_main_df = main_df[(main_df.index >= last_5perc)]
+    main_df = main_df[(main_df.index < last_5perc)]
 
-print(f"train data: {len(train_x)} validation: {len(validation_x)}")
-print(f"Dont buy: {train_y.count(0)}, buys: {train_y.count(1)}")
-print(f"VALIDATION dont buy: {validation_y.count(0)}, buy: {validation_y.count(1)}")
+    train_x, train_y = preprocess_df(main_df)
+    validation_x, validation_y = preprocess_df(validation_main_df)
 
-# print(main_df[[f"{MARKET_TO_PREDICT}_close", "future", "target"]].head(10))
+    print(f"train data: {len(train_x)} validation: {len(validation_x)}")
+    print(f"Dont buy: {train_y.count(0)}, buys: {train_y.count(1)}")
+    print(f"VALIDATION dont buy: {validation_y.count(0)}, buy: {validation_y.count(1)}")
+
+    # print(main_df[[f"{MARKET_TO_PREDICT}_close", "future", "target"]].head(10))
+    return train_x, train_y, validation_x, validation_y
